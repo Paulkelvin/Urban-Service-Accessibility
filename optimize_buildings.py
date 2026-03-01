@@ -1,104 +1,84 @@
 """
 Optimize buildings GeoJSON files for web delivery.
-- Converts building polygons to centroids (points) — drastically smaller files
-- Rounds coordinates to 5 decimal places (~1m accuracy)
-- Keeps only essential properties (area_sqm)
+- Keeps original polygon shapes (no centroid conversion)
+- Simplifies geometries aggressively (removes redundant vertices)
+- Rounds coordinates to 4 decimal places  (~11m, fine for building outlines at web zoom)
+- Keeps only area_sqm property
 - Minifies JSON output
-Originals (.gpkg) are untouched — re-run convert_to_geojson.py to restore polygons.
+Originals (.gpkg) are always re-read fresh.
 """
 
 import geopandas as gpd
 import json
 import os
+import shapely.geometry as sg
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+GPKG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
-FILES = {
-    "buildings_served.geojson": "buildings_served.geojson",
-    "buildings_unserved.geojson": "buildings_unserved.geojson",
-}
+FILES = [
+    ("Buildings_UTM_FIXED.gpkg",   "buildings_served.geojson",   "served"),
+    ("Buildings_UTM_FIXED.gpkg",   "buildings_unserved.geojson", "unserved"),
+]
 
-COORD_PRECISION = 5   # decimal places (~1m accuracy)
+BUILDINGS_SERVED_GPKG   = os.path.join(GPKG_DIR, "buildings_served.gpkg")
+BUILDINGS_UNSERVED_GPKG = os.path.join(GPKG_DIR, "buildings_unserved.gpkg")
+
+SIMPLIFY_TOLERANCE = 0.0005   # degrees (~50m) - keeps outline, removes excess vertices
+COORD_PRECISION    = 4        # decimal places (~11m, fine for web polygon outlines)
 
 
-def optimize(filename):
-    path = os.path.join(DATA_DIR, filename)
-    print(f"\nProcessing: {filename}")
+def round_coord_list(coords, precision):
+    if isinstance(coords[0], (int, float)):
+        return [round(c, precision) for c in coords]
+    return [round_coord_list(c, precision) for c in coords]
 
-    gdf = gpd.read_file(path)
-    original_size = os.path.getsize(path) / (1024 * 1024)
-    original_count = len(gdf)
-    print(f"  Features: {original_count:,}  |  Size: {original_size:.2f} MB")
 
-    # 1. Reproject to WGS84 if needed
+def round_geom(geom_dict, precision):
+    g = dict(geom_dict)
+    if "coordinates" in g:
+        g["coordinates"] = round_coord_list(g["coordinates"], precision)
+    return g
+
+
+def optimize(gpkg_path, out_filename):
+    out_path = os.path.join(DATA_DIR, out_filename)
+    print(f"\nOptimizing: {out_filename}")
+
+    gdf = gpd.read_file(gpkg_path)
+    print(f"  Source features: {len(gdf):,}")
+
+    # Area in UTM before reprojecting
     if gdf.crs and gdf.crs.to_epsg() != 4326:
+        gdf["area_sqm"] = gdf.geometry.area.round(1)
         gdf = gdf.to_crs(epsg=4326)
-
-    # 2. Calculate area_sqm before converting to centroids
-    if "area_sqm" not in gdf.columns:
+    else:
         gdf_utm = gdf.to_crs(epsg=32631)
         gdf["area_sqm"] = gdf_utm.geometry.area.round(1)
-    
-    # 3. Convert polygons to centroids (points) — massively reduces file size
-    #    Use UTM for accurate centroid, then back to WGS84
-    gdf_utm = gdf.to_crs(epsg=32631)
-    gdf["geometry"] = gdf_utm.geometry.centroid
-    gdf = gdf.set_crs(epsg=32631)
-    gdf = gdf.to_crs(epsg=4326)
 
-    # 4. Drop null geometries
+    # Simplify polygons
+    gdf["geometry"] = gdf.geometry.simplify(SIMPLIFY_TOLERANCE, preserve_topology=True)
     gdf = gdf[~gdf.geometry.is_empty & gdf.geometry.notna()]
 
-    # 5. Build GeoJSON manually with rounded coordinates
+    # Build minified GeoJSON
     features = []
     for _, row in gdf.iterrows():
         geom = row.geometry
         if geom is None or geom.is_empty:
             continue
+        geom_dict = round_geom(sg.mapping(geom), COORD_PRECISION)
+        area = round(float(row["area_sqm"]), 1) if row.get("area_sqm") is not None else 0
+        features.append({"type": "Feature", "geometry": geom_dict, "properties": {"area_sqm": area}})
 
-        props = {}
-        if "area_sqm" in gdf.columns and row.get("area_sqm") is not None:
-            props["area_sqm"] = round(float(row["area_sqm"]), 1)
-
-        features.append({
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    round(geom.x, COORD_PRECISION),
-                    round(geom.y, COORD_PRECISION)
-                ]
-            },
-            "properties": props
-        })
-
-    geojson = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
-    # 6. Write minified JSON
-    with open(path, "w") as f:
+    geojson = {"type": "FeatureCollection", "features": features}
+    with open(out_path, "w") as f:
         json.dump(geojson, f, separators=(",", ":"))
 
-    new_size = os.path.getsize(path) / (1024 * 1024)
-    reduction = (1 - new_size / original_size) * 100
-    print(f"  Done: {new_size:.2f} MB  |  Reduced by {reduction:.1f}%")
+    size_mb = os.path.getsize(out_path) / (1024 * 1024)
+    print(f"  Output: {size_mb:.2f} MB  ({len(features):,} features)")
 
 
 if __name__ == "__main__":
-    # Re-read from original gpkg sources for clean output
-    import subprocess, sys
-    print("Re-generating from original .gpkg files first...")
-    result = subprocess.run(
-        [sys.executable, "convert_to_geojson.py"],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print("Warning: convert_to_geojson.py failed, optimizing current files instead")
-        print(result.stderr[:500])
-
-    for fname in FILES:
-        optimize(fname)
-    print("\nOptimization complete. Building layers are now point centroids.")
-
+    optimize(BUILDINGS_SERVED_GPKG,   "buildings_served.geojson")
+    optimize(BUILDINGS_UNSERVED_GPKG, "buildings_unserved.geojson")
+    print("\nDone. Building layers are optimized polygons.")

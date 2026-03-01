@@ -300,19 +300,17 @@ function createBuildingsServedLayer() {
     if (!layerState.buildingsServed.data) return;
 
     layerState.buildingsServed.layer = L.geoJSON(layerState.buildingsServed.data, {
-        pointToLayer: (feature, latlng) => {
-            return L.circleMarker(latlng, {
-                radius: 3,
-                color: '#0891b2',
-                weight: 0,
-                fillColor: '#06b6d4',
-                fillOpacity: 0.8
-            });
+        style: {
+            color: '#0891b2',
+            weight: 0.5,
+            opacity: 0.8,
+            fillColor: '#06b6d4',
+            fillOpacity: 0.7
         },
         onEachFeature: (feature, layer) => {
             layer.bindPopup(createBuildingPopup('served', feature.properties));
-            layer.on('mouseover', function() { this.setStyle({ radius: 5, fillOpacity: 1 }); });
-            layer.on('mouseout',  function() { this.setStyle({ radius: 3, fillOpacity: 0.8 }); });
+            layer.on('mouseover', function() { this.setStyle({ weight: 2, fillOpacity: 0.9 }); this.bringToFront(); });
+            layer.on('mouseout',  function() { this.setStyle({ weight: 0.5, fillOpacity: 0.7 }); });
         }
     });
 
@@ -325,19 +323,17 @@ function createBuildingsUnservedLayer() {
     if (!layerState.buildingsUnserved.data) return;
 
     layerState.buildingsUnserved.layer = L.geoJSON(layerState.buildingsUnserved.data, {
-        pointToLayer: (feature, latlng) => {
-            return L.circleMarker(latlng, {
-                radius: 3,
-                color: '#ea580c',
-                weight: 0,
-                fillColor: '#f97316',
-                fillOpacity: 0.8
-            });
+        style: {
+            color: '#ea580c',
+            weight: 0.5,
+            opacity: 0.8,
+            fillColor: '#f97316',
+            fillOpacity: 0.7
         },
         onEachFeature: (feature, layer) => {
             layer.bindPopup(createBuildingPopup('unserved', feature.properties));
-            layer.on('mouseover', function() { this.setStyle({ radius: 5, fillOpacity: 1 }); });
-            layer.on('mouseout',  function() { this.setStyle({ radius: 3, fillOpacity: 0.8 }); });
+            layer.on('mouseover', function() { this.setStyle({ weight: 2, fillOpacity: 0.9 }); this.bringToFront(); });
+            layer.on('mouseout',  function() { this.setStyle({ weight: 0.5, fillOpacity: 0.7 }); });
         }
     });
 
