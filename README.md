@@ -4,7 +4,7 @@ An interactive web map visualizing spatial accessibility to public services (sch
 
 ## Live Demo
 
-[View Dashboard](https://paulkelvin.github.io/Urban-Service-Accessibility/)
+[View Dashboard](https://urban-service-accessibility.netlify.app/)
 
 ## Features
 
