@@ -1,0 +1,58 @@
+{
+  "admin_boundary": {
+    "feature_count": 1,
+    "total_area_sqm": 190497100.22016343,
+    "total_area_sqkm": 190.49710022016345
+  },
+  "schools_buffer": {
+    "feature_count": 1,
+    "total_area_sqm": 15703893.933429213,
+    "total_area_sqkm": 15.703893933429214
+  },
+  "health_buffer": {
+    "feature_count": 1,
+    "total_area_sqm": 21563471.691038065,
+    "total_area_sqkm": 21.563471691038064
+  },
+  "all_services": {
+    "feature_count": 1,
+    "total_area_sqm": 29308634.63558442,
+    "total_area_sqkm": 29.308634635584422
+  },
+  "service_gap": {
+    "feature_count": 1,
+    "total_area_sqm": 163159687.39015684,
+    "total_area_sqkm": 163.15968739015685
+  },
+  "buildings_served": {
+    "feature_count": 34167,
+    "total_area_sqm": 4346929.805902597,
+    "total_area_sqkm": 4.3469298059025965
+  },
+  "buildings_unserved": {
+    "feature_count": 22836,
+    "total_area_sqm": 3218200.016052953,
+    "total_area_sqkm": 3.218200016052953
+  },
+  "roads": {
+    "feature_count": 2653
+  },
+  "schools": {
+    "feature_count": 57
+  },
+  "health_centers": {
+    "feature_count": 17
+  },
+  "summary": {
+    "admin_area_sqkm": 190.49710022016345,
+    "service_coverage_sqkm": 29.308634635584422,
+    "service_gap_sqkm": 163.15968739015685,
+    "coverage_percentage": 15.38534423973463,
+    "gap_percentage": 85.64943361425875,
+    "buildings_served_count": 34167,
+    "buildings_unserved_count": 22836,
+    "schools_count": 57,
+    "health_centers_count": 17,
+    "building_coverage_pct": 59.93895058154835
+  }
+}

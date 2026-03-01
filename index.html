@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Service Accessibility Dashboard — Ijebu-Ode, Nigeria</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --primary-light: #2d5a87;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f97316;
+            
+            /* Light professional theme */
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-header: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            
+            /* Layer colors */
+            --school-color: #3b82f6;
+            --health-color: #10b981;
+            --gap-color: #ef4444;
+            --building-served: #06b6d4;
+            --building-unserved: #f97316;
+            --road-color: #94a3b8;
+            --admin-color: #8b5cf6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-header);
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            position: relative;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .logo {
+            width: 42px;
+            height: 42px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo i {
+            font-size: 22px;
+            color: #ffffff;
+        }
+        
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+        
+        .header-title p {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 2px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .header-stat {
+            text-align: center;
+            padding: 0 16px;
+            border-left: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .header-stat:first-child {
+            border-left: none;
+        }
+        
+        .header-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        
+        .header-stat-value.success { color: #6ee7b7; }
+        .header-stat-value.warning { color: #fcd34d; }
+        .header-stat-value.danger { color: #fca5a5; }
+        
+        .header-stat-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Main Container */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 70px);
+            position: relative;
+        }
+        
+        /* Left Stats Panel */
+        .stats-panel {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+        }
+        
+        .panel-section {
+            margin-bottom: 24px;
+        }
+        
+        .panel-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .panel-section-title i {
+            color: var(--primary);
+        }
+        
+        /* View Tabs */
+        .view-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .view-tab {
+            padding: 12px 10px;
+            border-radius: 10px;
+            background: var(--bg-main);
+            border: 2px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .view-tab:hover {
+            border-color: var(--border);
+            color: var(--text-primary);
+        }
+        
+        .view-tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .view-tab i {
+            display: block;
+            font-size: 1.25rem;
+            margin-bottom: 6px;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .stat-card {
+            background: var(--bg-main);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .stat-card.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .stat-card.highlight {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+            border-color: var(--secondary);
+        }
+        
+        .stat-card.warning {
+            background: rgba(249, 115, 22, 0.08);
+            border-color: var(--warning);
+        }
+        
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 14px;
+        }
+        
+        .stat-icon.school { background: rgba(59, 130, 246, 0.15); color: var(--school-color); }
+        .stat-icon.health { background: rgba(16, 185, 129, 0.15); color: var(--health-color); }
+        .stat-icon.served { background: rgba(6, 182, 212, 0.15); color: var(--building-served); }
+        .stat-icon.unserved { background: rgba(249, 115, 22, 0.15); color: var(--building-unserved); }
+        
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .stat-card.highlight .stat-value { color: var(--secondary); }
+        .stat-card.warning .stat-value { color: var(--warning); }
+        
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Progress Bar */
+        .coverage-bar {
+            margin-top: 16px;
+        }
+        
+        .coverage-bar-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .coverage-bar-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .coverage-bar-value {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .coverage-bar-track {
+            height: 8px;
+            background: var(--border-light);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .coverage-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .coverage-bar-fill.success {
+            background: linear-gradient(90deg, var(--secondary), #34d399);
+        }
+        
+        .coverage-bar-fill.warning {
+            background: linear-gradient(90deg, var(--warning), #fb923c);
+        }
+        
+        /* Map Container */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #e8f4f8;
+        }
+        
+        /* Right Layer Control Panel */
+        .layer-panel {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 260px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        
+        .layer-panel-header {
+            padding: 14px 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .layer-panel-header h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .layer-panel-toggle {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .layer-panel-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .layer-panel-content {
+            max-height: 450px;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        
+        .layer-panel.collapsed .layer-panel-content {
+            display: none;
+        }
+        
+        .layer-group {
+            margin-bottom: 16px;
+        }
+        
+        .layer-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .layer-group-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 4px;
+            background: var(--bg-main);
+            border: 1px solid transparent;
+        }
+        
+        .layer-item:hover {
+            border-color: var(--border);
+        }
+        
+        .layer-item.active {
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .layer-toggle {
+            width: 38px;
+            height: 20px;
+            background: var(--border);
+            border-radius: 10px;
+            position: relative;
+            margin-right: 10px;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .layer-toggle::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .layer-item.active .layer-toggle {
+            background: var(--secondary);
+        }
+        
+        .layer-item.active .layer-toggle::after {
+            transform: translateX(18px);
+        }
+        
+        .layer-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .layer-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .layer-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .layer-meta {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        /* Legend */
+        .legend-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 16px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 14px 16px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            border: 1px solid var(--border);
+            min-width: 180px;
+        }
+        
+        .legend-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-primary);
+        }
+        
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .legend-color {
+            width: 24px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        
+        /* Custom Leaflet Styles */
+        .leaflet-container {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: var(--shadow-lg) !important;
+            border-radius: 10px !important;
+            overflow: hidden;
+        }
+        
+        .leaflet-control-zoom a {
+            background: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border: none !important;
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 36px !important;
+            font-size: 16px !important;
+        }
+        
+        .leaflet-control-zoom a:hover {
+            background: var(--bg-main) !important;
+            color: var(--primary) !important;
+        }
+        
+        .leaflet-control-zoom-in {
+            border-radius: 10px 10px 0 0 !important;
+            border-bottom: 1px solid var(--border) !important;
+        }
+        
+        .leaflet-control-zoom-out {
+            border-radius: 0 0 10px 10px !important;
+        }
+        
+        /* Custom Popup */
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .leaflet-popup-tip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+        }
+        
+        .leaflet-popup-content {
+            margin: 0;
+            min-width: 240px;
+            max-width: 320px;
+        }
+        
+        .popup-header {
+            padding: 14px 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+        
+        .popup-header.school { background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); }
+        .popup-header.health { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+        .popup-header.gap { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+        .popup-header.served { background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); }
+        .popup-header.unserved { background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); }
+        
+        .popup-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .popup-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin-top: 4px;
+        }
+        
+        .popup-body {
+            padding: 14px 16px;
+        }
+        
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.8rem;
+        }
+        
+        .popup-row:last-child {
+            border-bottom: none;
+        }
+        
+        .popup-label {
+            color: var(--text-secondary);
+        }
+        
+        .popup-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .popup-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .popup-badge.served {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--secondary);
+        }
+        
+        .popup-badge.unserved {
+            background: rgba(249, 115, 22, 0.15);
+            color: var(--warning);
+        }
+        
+        /* Attribution */
+        .leaflet-control-attribution {
+            background: rgba(255,255,255,0.9) !important;
+            color: var(--text-secondary) !important;
+            font-size: 10px !important;
+            padding: 4px 8px !important;
+            border-radius: 6px 0 0 0;
+        }
+        
+        .leaflet-control-attribution a {
+            color: var(--primary) !important;
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 16px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Scale Control */
+        .leaflet-control-scale-line {
+            background: rgba(255,255,255,0.9) !important;
+            border-color: var(--text-secondary) !important;
+            color: var(--text-primary) !important;
+            font-size: 10px !important;
+            border-radius: 3px;
+        }
+        
+        /* Scrollbar */
+        .stats-panel::-webkit-scrollbar,
+        .layer-panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .stats-panel::-webkit-scrollbar-track,
+        .layer-panel-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .stats-panel::-webkit-scrollbar-thumb,
+        .layer-panel-content::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-panel {
+                width: 240px;
+            }
+            
+            .header-stats {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-panel {
+                position: absolute;
+                left: -280px;
+                top: 0;
+                height: 100%;
+                z-index: 1001;
+                transition: left 0.3s ease;
+            }
+            
+            .stats-panel.open {
+                left: 0;
+            }
+            
+            .layer-panel {
+                width: 220px;
+                right: 8px;
+                top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Urban Service Data...</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-map-marked-alt"></i>
+            </div>
+            <div class="header-title">
+                <h1>Urban Service Accessibility</h1>
+                <p>Ijebu-Ode, Ogun State, Nigeria</p>
+            </div>
+        </div>
+        
+        <div class="header-stats">
+            <div class="header-stat">
+                <div class="header-stat-value success" id="headerCoverage">--</div>
+                <div class="header-stat-label">Area Coverage</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value" id="headerBuildingCoverage">--</div>
+                <div class="header-stat-label">Building Coverage</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value" id="headerFacilities">--</div>
+                <div class="header-stat-label">Total Facilities</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value warning" id="headerUnserved">--</div>
+                <div class="header-stat-label">Unserved Buildings</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Stats Panel -->
+        <aside class="stats-panel" id="statsPanel">
+            <!-- View Selection -->
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fas fa-th-large"></i> Map Views
+                </div>
+                <div class="view-tabs">
+                    <div class="view-tab active" data-view="accessibility" onclick="switchView('accessibility')">
+                        <i class="fas fa-bullseye"></i>
+                        Service Access
+                    </div>
+                    <div class="view-tab" data-view="gaps" onclick="switchView('gaps')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Service Gaps
+                    </div>
+                    <div class="view-tab" data-view="buildings" onclick="switchView('buildings')">
+                        <i class="fas fa-building"></i>
+                        Buildings
+                    </div>
+                    <div class="view-tab" data-view="all" onclick="switchView('all')">
+                        <i class="fas fa-layer-group"></i>
+                        All Layers
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coverage Stats -->
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fas fa-chart-pie"></i> Coverage Analysis
+                </div>
+                
+                <div class="coverage-bar">
+                    <div class="coverage-bar-header">
+                        <span class="coverage-bar-label">Area Coverage</span>
+                        <span class="coverage-bar-value" id="areaCoveragePct">--</span>
+                    </div>
+                    <div class="coverage-bar-track">
+                        <div class="coverage-bar-fill success" id="areaCoverageBar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="coverage-bar" style="margin-top: 12px;">
+                    <div class="coverage-bar-header">
+                        <span class="coverage-bar-label">Building Coverage</span>
+                        <span class="coverage-bar-value" id="buildingCoveragePct">--</span>
+                    </div>
+                    <div class="coverage-bar-track">
+                        <div class="coverage-bar-fill success" id="buildingCoverageBar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Facility Stats -->
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fas fa-hospital"></i> Facilities
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon school"><i class="fas fa-graduation-cap"></i></div>
+                        <div class="stat-value" id="statSchools">--</div>
+                        <div class="stat-label">Schools</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon health"><i class="fas fa-hospital"></i></div>
+                        <div class="stat-value" id="statHealth">--</div>
+                        <div class="stat-label">Health Centers</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Building Stats -->
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fas fa-building"></i> Building Status
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card highlight">
+                        <div class="stat-icon served"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-value" id="statServed">--</div>
+                        <div class="stat-label">Served</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon unserved"><i class="fas fa-times-circle"></i></div>
+                        <div class="stat-value" id="statUnserved">--</div>
+                        <div class="stat-label">Unserved</div>
+                    </div>
+                    <div class="stat-card full-width">
+                        <div class="stat-value" id="statTotalBuildings">--</div>
+                        <div class="stat-label">Total Buildings Analyzed</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Area Stats -->
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fas fa-ruler-combined"></i> Area Statistics
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statAdminArea">--</div>
+                        <div class="stat-label">Total Area (km²)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCoverageArea">--</div>
+                        <div class="stat-label">Covered (km²)</div>
+                    </div>
+                    <div class="stat-card full-width warning">
+                        <div class="stat-value" id="statGapArea">--</div>
+                        <div class="stat-label">Service Gap Area (km²)</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Layer Control Panel (Right Side) -->
+            <div class="layer-panel" id="layerPanel">
+                <div class="layer-panel-header">
+                    <h3><i class="fas fa-layer-group"></i> Layers</h3>
+                    <button class="layer-panel-toggle" onclick="toggleLayerPanel()">
+                        <i class="fas fa-chevron-up" id="layerPanelIcon"></i>
+                    </button>
+                </div>
+                <div class="layer-panel-content">
+                    <div class="layer-group">
+                        <div class="layer-group-title">Service Coverage</div>
+                        <div class="layer-item active" data-layer="schoolsBuffer" onclick="toggleLayer('schoolsBuffer')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: linear-gradient(90deg, rgba(59,130,246,0.3), rgba(59,130,246,0.7));"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Schools Buffer</div>
+                                <div class="layer-meta">500m radius</div>
+                            </div>
+                        </div>
+                        <div class="layer-item active" data-layer="healthBuffer" onclick="toggleLayer('healthBuffer')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: linear-gradient(90deg, rgba(16,185,129,0.3), rgba(16,185,129,0.7));"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Health Buffer</div>
+                                <div class="layer-meta">1000m radius</div>
+                            </div>
+                        </div>
+                        <div class="layer-item" data-layer="serviceGap" onclick="toggleLayer('serviceGap')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: rgba(239,68,68,0.6);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Service Gaps</div>
+                                <div class="layer-meta">Underserved areas</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layer-group">
+                        <div class="layer-group-title">Buildings</div>
+                        <div class="layer-item" data-layer="buildingsServed" onclick="toggleLayer('buildingsServed')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: var(--building-served);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Served Buildings</div>
+                                <div class="layer-meta" id="layerCountServed">-- buildings</div>
+                            </div>
+                        </div>
+                        <div class="layer-item" data-layer="buildingsUnserved" onclick="toggleLayer('buildingsUnserved')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: var(--building-unserved);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Unserved Buildings</div>
+                                <div class="layer-meta" id="layerCountUnserved">-- buildings</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layer-group">
+                        <div class="layer-group-title">Facilities & Infrastructure</div>
+                        <div class="layer-item active" data-layer="schools" onclick="toggleLayer('schools')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: var(--school-color);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Schools</div>
+                                <div class="layer-meta" id="layerCountSchools">-- points</div>
+                            </div>
+                        </div>
+                        <div class="layer-item active" data-layer="healthCenters" onclick="toggleLayer('healthCenters')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: var(--health-color);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Health Centers</div>
+                                <div class="layer-meta" id="layerCountHealth">-- points</div>
+                            </div>
+                        </div>
+                        <div class="layer-item active" data-layer="roads" onclick="toggleLayer('roads')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: var(--road-color);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Roads</div>
+                                <div class="layer-meta">Road network</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layer-group">
+                        <div class="layer-group-title">Boundaries</div>
+                        <div class="layer-item active" data-layer="adminBoundary" onclick="toggleLayer('adminBoundary')">
+                            <div class="layer-toggle"></div>
+                            <div class="layer-color" style="background: var(--admin-color);"></div>
+                            <div class="layer-info">
+                                <div class="layer-name">Admin Boundary</div>
+                                <div class="layer-meta">Ijebu-Ode LGA</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="legend-panel" id="legendPanel">
+                <div class="legend-title">Legend</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(90deg, rgba(59,130,246,0.2), rgba(59,130,246,0.6));"></div>
+                    <span>School coverage (500m)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(90deg, rgba(16,185,129,0.2), rgba(16,185,129,0.6));"></div>
+                    <span>Health coverage (1km)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(239,68,68,0.5);"></div>
+                    <span>Service gap</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #06b6d4;"></div>
+                    <span>Served building</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f97316;"></div>
+                    <span>Unserved building</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
