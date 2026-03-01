@@ -24,8 +24,8 @@ FILES = [
 BUILDINGS_SERVED_GPKG   = os.path.join(GPKG_DIR, "buildings_served.gpkg")
 BUILDINGS_UNSERVED_GPKG = os.path.join(GPKG_DIR, "buildings_unserved.gpkg")
 
-SIMPLIFY_TOLERANCE = 0.0005   # degrees (~50m) - keeps outline, removes excess vertices
-COORD_PRECISION    = 4        # decimal places (~11m, fine for web polygon outlines)
+SIMPLIFY_TOLERANCE = 0.000001  # degrees (~0.1m) - imperceptible, only removes duplicate vertices
+COORD_PRECISION    = 6         # decimal places (~0.1m) - sharp, accurate building outlines
 
 
 def round_coord_list(coords, precision):
